@@ -13,7 +13,8 @@ generate-key:
 	docker compose exec app php artisan key:generate
 
 migrate:
-	docker compose exec app php artisan migrate
+	docker compose exec app php artisan migrate --database=sqlite --force && \
+	docker compose exec app php artisan migrate --database=test_sqlite --force
 
 down:
 	docker compose down

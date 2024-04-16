@@ -30,7 +30,4 @@ RUN mkdir -p /home/$user/.composer && \
 
 WORKDIR /var/www
 
-RUN touch database/database.sqlite && \
-    touch database/test_database.sqlite
-
 USER $user
