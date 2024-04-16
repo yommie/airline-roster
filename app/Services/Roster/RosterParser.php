@@ -17,8 +17,6 @@ class RosterParser
      */
     public function parse(string $data): array
     {
-        $activities = $this->parser->parse($data);
-
-        return $activities;
+        return $this->parser->parse($data);
     }
 }

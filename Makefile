@@ -19,7 +19,7 @@ down:
 	docker compose down
 
 remove-image:
-	docker rmi yommie-airline-roster
+	docker rmi yommie-airline-roster --force
 
 clean: down remove-image
 
@@ -32,4 +32,10 @@ pause:
 unpause:
 	docker compose unpause
 
-.PHONY: run build up composer-install generate-key migrate down remove-image clean logs pause unpause
+tests:
+	docker compose exec app ./vendor/bin/phpunit
+
+tests-coverage:
+	docker compose exec app ./vendor/bin/phpunit --coverage-html ./public/tests
+
+.PHONY: run build up composer-install generate-key migrate down remove-image clean logs pause unpause tests tests-coverage

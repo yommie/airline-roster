@@ -3,14 +3,12 @@
 namespace App\DTOs\Roster;
 
 use App\Enums\ActivityTypeEnum;
-use App\Models\User;
 use DateTime;
 use InvalidArgumentException;
 
 readonly class RosterActivityDTO
 {
     public function __construct(
-        public User                         $user,
         public DateTime                     $date,
         public ActivityTypeEnum             $activityType,
         public ?DateTime                    $activityStart = null,
@@ -24,7 +22,6 @@ readonly class RosterActivityDTO
     public function toArray(): array
     {
         return [
-            "user_id"           => $this->user->id,
             "date"              => $this->date,
             "activity_type"     => $this->activityType->value,
             "activity_start"    => $this->activityStart,

@@ -5,10 +5,8 @@ namespace App\Services\Roster\Parsers;
 use App\DTOs\Roster\Activities\FlightActivityDTO;
 use App\DTOs\Roster\RosterActivityDTO;
 use App\Enums\ActivityTypeEnum;
-use App\Models\User;
 use App\Services\Roster\ParseRosterInterface;
 use DateTime;
-use Illuminate\Support\Facades\Auth;
 use LogicException;
 use RuntimeException;
 use Symfony\Component\DomCrawler\Crawler;
@@ -36,10 +34,6 @@ class ParseRosterHtml implements ParseRosterInterface
 
     private function getCrawler(): Crawler
     {
-        if ($this->crawler === null) {
-            throw new LogicException("Crawler not initialised.");
-        }
-
         return $this->crawler;
     }
 
@@ -53,14 +47,14 @@ class ParseRosterHtml implements ParseRosterInterface
         $periodSelect = $this->getCrawler()->filter("#ctl00_Main_periodSelect option:selected");
 
         if ($periodSelect->count() < 1) {
-            return;
+            throw new RuntimeException("Could not detect period start and end dates");
         }
 
         $periodSelectValue = $periodSelect->attr("value");
 
         $periods = explode("|", $periodSelectValue);
 
-        if ($periods[0]) {
+        if (isset($periods[0])) {
             $periodStart = DateTime::createFromFormat("Y-m-d", $periods[0]);
 
             if ($periodStart !== false) {
@@ -68,7 +62,7 @@ class ParseRosterHtml implements ParseRosterInterface
             }
         }
 
-        if ($periods[1]) {
+        if (isset($periods[1])) {
             $periodEnd = DateTime::createFromFormat("Y-m-d", $periods[1]);
 
             if ($periodEnd !== false) {
@@ -282,54 +276,35 @@ class ParseRosterHtml implements ParseRosterInterface
 
     private function activityArrayToDTO(array $activity, ActivityTypeEnum $activityType): RosterActivityDTO
     {
-        $user = Auth::user();
-
-        switch ($activityType) {
-            case ActivityTypeEnum::Off:
-                return $this->createOffActivity($user, $activity["date"]);
-
-            case ActivityTypeEnum::CheckIn:
-                return $this->createCheckInActivity(
-                    $user,
-                    $activity["date"],
-                    $this->timeToDateTime($activity["check_in"], $activity["date"])
-                );
-
-            case ActivityTypeEnum::CheckOut:
-                return $this->createCheckOutActivity(
-                    $user,
-                    $activity["date"],
-                    $this->timeToDateTime($activity["check_out"], $activity["date"])
-                );
-
-            case ActivityTypeEnum::Flight:
-                return $this->createFlightActivity(
-                    $user,
-                    $activity
-                );
-
-            case ActivityTypeEnum::StandBy:
-                return $this->createStandByActivity(
-                    $user,
-                    $activity["date"],
-                    $this->timeToDateTime($activity["activity_start"], $activity["date"]),
-                    $this->timeToDateTime($activity["activity_end"], $activity["date"]),
-                );
-        }
-
-        return $this->createUnknownActivity($user, $activity);
+        return match ($activityType) {
+            ActivityTypeEnum::Off       => $this->createOffActivity($activity["date"]),
+            ActivityTypeEnum::CheckIn   => $this->createCheckInActivity(
+                $activity["date"],
+                $this->timeToDateTime($activity["check_in"], $activity["date"])
+            ),
+            ActivityTypeEnum::CheckOut  => $this->createCheckOutActivity(
+                $activity["date"],
+                $this->timeToDateTime($activity["check_out"], $activity["date"])
+            ),
+            ActivityTypeEnum::Flight    => $this->createFlightActivity($activity),
+            ActivityTypeEnum::StandBy   => $this->createStandByActivity(
+                $activity["date"],
+                $this->timeToDateTime($activity["activity_start"], $activity["date"]),
+                $this->timeToDateTime($activity["activity_end"], $activity["date"]),
+            ),
+            default                     => $this->createUnknownActivity($activity),
+        };
     }
 
-    private function createOffActivity(User $user, DateTime $date): RosterActivityDTO
+    private function createOffActivity(DateTime $date): RosterActivityDTO
     {
         return new RosterActivityDTO(
-            $user,
             $date,
             ActivityTypeEnum::Off
         );
     }
 
-    private function createUnknownActivity(User $user, array $activityData): RosterActivityDTO
+    private function createUnknownActivity(array $activityData): RosterActivityDTO
     {
         $date   = $activityData["date"];
         $end    = $this->timeToDateTime($activityData["activity_end"], $date);
@@ -346,7 +321,6 @@ class ParseRosterHtml implements ParseRosterInterface
         unset($activityData["aircraft_registration_number"]);
 
         return new RosterActivityDTO(
-            $user,
             $date,
             ActivityTypeEnum::Unknown,
             $start,
@@ -356,12 +330,10 @@ class ParseRosterHtml implements ParseRosterInterface
     }
 
     private function createCheckInActivity(
-        User $user,
         DateTime $date,
         DateTime $checkInTime
     ): RosterActivityDTO {
         return new RosterActivityDTO(
-            $user,
             $date,
             ActivityTypeEnum::CheckIn,
             $checkInTime
@@ -369,22 +341,18 @@ class ParseRosterHtml implements ParseRosterInterface
     }
 
     private function createCheckOutActivity(
-        User $user,
         DateTime $date,
         DateTime $checkOutTime
     ): RosterActivityDTO {
         return new RosterActivityDTO(
-            $user,
             $date,
             ActivityTypeEnum::CheckOut,
             $checkOutTime
         );
     }
 
-    private function createFlightActivity(
-        User $user,
-        array $activity
-    ): RosterActivityDTO {
+    private function createFlightActivity(array $activity): RosterActivityDTO
+    {
         $activityEnd    = $this->timeToDateTime($activity["activity_end"], $activity["date"]);
         $activityStart  = $this->timeToDateTime($activity["activity_start"], $activity["date"]);
 
@@ -404,7 +372,6 @@ class ParseRosterHtml implements ParseRosterInterface
         );
 
         return new RosterActivityDTO(
-            $user,
             $activity["date"],
             ActivityTypeEnum::Flight,
             $activityStart,
@@ -414,13 +381,11 @@ class ParseRosterHtml implements ParseRosterInterface
     }
 
     private function createStandByActivity(
-        User $user,
         DateTime $date,
         DateTime $start,
         DateTime $end
     ): RosterActivityDTO {
         return new RosterActivityDTO(
-            $user,
             $date,
             ActivityTypeEnum::StandBy,
             $start,
@@ -444,12 +409,8 @@ class ParseRosterHtml implements ParseRosterInterface
         return preg_match('/^[A-Za-z]{2}\d+$/', $activityType);
     }
 
-    private function formatColumnValue(?string $value): ?string
+    private function formatColumnValue(string $value): ?string
     {
-        if ($value === null) {
-            return null;
-        }
-
         $value = trim($value, " \t\n\r\0\x0B" . chr(160) . chr(194));
 
         return empty($value) ? null : $value;

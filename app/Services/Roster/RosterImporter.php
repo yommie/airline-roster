@@ -5,6 +5,7 @@ namespace App\Services\Roster;
 use App\DTOs\Roster\RosterActivityDTO;
 use App\Enums\ActivityTypeEnum;
 use App\Models\DayActivity;
+use App\Models\User;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
@@ -13,16 +14,17 @@ use Illuminate\Support\Facades\DB;
 class RosterImporter
 {
     /**
+     * @param User $user
      * @param array<RosterActivityDTO> $activities
      * @return void
      */
-    public function import(array $activities): void
+    public function import(User $user, array $activities): void
     {
         try {
             DB::beginTransaction();
 
             foreach ($activities as $activity) {
-                $this->importActivity($activity);
+                $this->importActivity($user, $activity);
             }
 
             DB::commit();
@@ -36,7 +38,7 @@ class RosterImporter
         }
     }
 
-    private function importActivity(RosterActivityDTO $activity): void
+    private function importActivity(User $user, RosterActivityDTO $activity): void
     {
         $activityTypeId     = null;
         $activityData       = $activity->toArray();
@@ -55,7 +57,8 @@ class RosterImporter
 
         unset($activityData["activity_data"]);
 
-        $activityData["activity_type_id"] = $activityTypeId;
+        $activityData["user_id"]            = $user->id;
+        $activityData["activity_type_id"]   = $activityTypeId;
 
         DayActivity::create($activityData);
     }

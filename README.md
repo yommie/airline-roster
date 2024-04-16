@@ -34,6 +34,16 @@ make run
 
 Application would be available locally on port `8686`
 
+## Sample Rosters
+Sample rosters can be found in the `storage/sample` directory
+
+## Tests
+To run tests, use the `make tests` command.
+
+If you would like to see coverage information, use the `make tests-coverage` command.
+
+To see coverage results, navigate to `http://127.0.0.1:8686/tests/index.html`
+
 ## API Endpoints
 
 ### GET /health
@@ -108,7 +118,7 @@ curl --location --request POST 'http://127.0.0.1:8686/api/v1/login' \
 curl --location --request POST 'http://127.0.0.1:8686/api/v1/upload-roster' \
 --header 'Accept: application/json' \
 --header 'Authorization: Bearer 1|drVUr4s6yZpbygt6wyBHV60VdbvCfVDbWqjSdCKYc522df40' \
---form 'roster=@"/path/to/project/public/sample/CrewConnex.html"'
+--form 'roster=@"/path/to/project/storage/sample/ValidRoster.html"'
 ```
 
 **Response `201`**

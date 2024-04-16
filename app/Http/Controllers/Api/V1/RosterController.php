@@ -12,6 +12,7 @@ use App\Services\Roster\Factories\ParseRosterFactory;
 use App\Services\Roster\RosterParser;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 class RosterController extends Controller
@@ -26,7 +27,7 @@ class RosterController extends Controller
 
         $rosterActivities = (new RosterParser($parser))->parse($roster->getContent());
 
-        dispatch(new ImportRosterJob($rosterActivities));
+        dispatch(new ImportRosterJob(Auth::user()->id, $rosterActivities));
 
         return response()->json([
             "message" => "Imported rosters"
