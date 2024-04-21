@@ -2,14 +2,13 @@
 
 namespace Tests\Feature\Services\Roster;
 
+use App\DTOs\Roster\Activities\FlightActivityDTO;
 use App\DTOs\Roster\RosterActivityDTO;
 use App\Enums\ActivityTypeEnum;
 use App\Models\User;
 use App\Services\Roster\RosterImporter;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
-use Illuminate\Support\Facades\DB;
 use Mockery;
 use RuntimeException;
 use Tests\TestCase;
@@ -28,6 +27,25 @@ class RosterImporterTest extends TestCase
         $activities = [
             new RosterActivityDTO(now(), ActivityTypeEnum::CheckIn),
             new RosterActivityDTO(now(), ActivityTypeEnum::CheckOut),
+            new RosterActivityDTO(
+                now(),
+                ActivityTypeEnum::Flight,
+                Carbon::create(2024, 2, 4, 12, 30),
+                Carbon::create(2024, 2, 4, 16, 30),
+                new FlightActivityDTO(
+                    "DX 9876",
+                    "JFK",
+                    Carbon::create(2024, 2, 4, 12, 30),
+                    "LAX",
+                    Carbon::create(2024, 2, 4, 16, 30),
+                    0,
+                    240,
+                    0,
+                    240,
+                    0,
+                    "RJX 45"
+                )
+            ),
         ];
 
         $dbMock = Mockery::mock('alias:Illuminate\Support\Facades\DB');
