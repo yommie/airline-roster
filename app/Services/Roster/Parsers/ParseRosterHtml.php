@@ -5,10 +5,9 @@ namespace App\Services\Roster\Parsers;
 use App\DTOs\Roster\Activities\FlightActivityDTO;
 use App\DTOs\Roster\RosterActivityDTO;
 use App\Enums\ActivityTypeEnum;
+use App\Services\Roster\Exceptions\InvalidRosterException;
 use App\Services\Roster\ParseRosterInterface;
 use DateTime;
-use LogicException;
-use RuntimeException;
 use Symfony\Component\DomCrawler\Crawler;
 
 class ParseRosterHtml implements ParseRosterInterface
@@ -22,6 +21,7 @@ class ParseRosterHtml implements ParseRosterInterface
     /**
      * @param string $data
      * @return array<RosterActivityDTO>
+     * @throws InvalidRosterException
      */
     public function parse(string $data): array
     {
@@ -42,12 +42,15 @@ class ParseRosterHtml implements ParseRosterInterface
         $this->crawler = new Crawler($html);
     }
 
+    /**
+     * @throws InvalidRosterException
+     */
     private function setPeriod(): void
     {
         $periodSelect = $this->getCrawler()->filter("#ctl00_Main_periodSelect option:selected");
 
         if ($periodSelect->count() < 1) {
-            throw new RuntimeException("Could not detect period start and end dates");
+            throw new InvalidRosterException("Could not detect period start and end dates");
         }
 
         $periodSelectValue = $periodSelect->attr("value");
@@ -71,7 +74,7 @@ class ParseRosterHtml implements ParseRosterInterface
         }
 
         if ($this->periodStart === null || $this->periodEnd === null) {
-            throw new RuntimeException("Could not detect period start and end dates");
+            throw new InvalidRosterException("Could not detect period start and end dates");
         }
     }
 

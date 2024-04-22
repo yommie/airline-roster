@@ -6,9 +6,10 @@ use App\DTOs\Roster\RosterActivityDTO;
 use App\Enums\ActivityTypeEnum;
 use App\Models\DayActivity;
 use App\Models\User;
+use App\Services\Roster\Exceptions\InvalidRosterException;
+use App\Services\Roster\Exceptions\RosterImportException;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
-use RuntimeException;
 use Illuminate\Support\Facades\DB;
 
 class RosterImporter
@@ -17,6 +18,7 @@ class RosterImporter
      * @param User $user
      * @param array<RosterActivityDTO> $activities
      * @return void
+     * @throws RosterImportException
      */
     public function import(User $user, array $activities): void
     {
@@ -31,7 +33,11 @@ class RosterImporter
         } catch (Exception $e) {
             DB::rollBack();
 
-            throw new RuntimeException(
+            if ($e instanceof InvalidRosterException) {
+                throw $e;
+            }
+
+            throw new RosterImportException(
                 message: "Import failed",
                 previous: $e
             );

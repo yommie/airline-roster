@@ -3,16 +3,16 @@
 namespace Tests\Feature\Services\Roster\Parsers;
 
 use App\DTOs\Roster\RosterActivityDTO;
+use App\Services\Roster\Exceptions\InvalidRosterException;
 use App\Services\Roster\Parsers\ParseRosterHtml;
 use Illuminate\Support\Facades\Storage;
-use RuntimeException;
 use Tests\TestCase;
 
 class ParseRosterHtmlTest extends TestCase
 {
     public function test_parse_empty_html()
     {
-        $this->expectException(RuntimeException::class);
+        $this->expectException(InvalidRosterException::class);
         $this->expectExceptionMessage("Could not detect period start and end dates");
 
         $parser = new ParseRosterHtml();
@@ -34,7 +34,7 @@ class ParseRosterHtmlTest extends TestCase
     {
         $html = Storage::disk("sample")->get("InvalidPeriodRoster.html");
 
-        $this->expectException(RuntimeException::class);
+        $this->expectException(InvalidRosterException::class);
         $this->expectExceptionMessage("Could not detect period start and end dates");
 
         $parser = new ParseRosterHtml();
